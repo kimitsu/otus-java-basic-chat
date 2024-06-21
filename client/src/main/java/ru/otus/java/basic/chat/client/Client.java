@@ -65,7 +65,6 @@ public class Client {
                     String message = inputStream.readUTF();
                     if (message.equals("/bye")) {
                         System.out.println("Server has terminated the connection");
-                        disconnect();
                         break;
                     }
                     System.out.println(message);
