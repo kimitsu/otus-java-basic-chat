@@ -3,12 +3,12 @@ package ru.otus.java.basic.chat.server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Server {
     private final int port;
-    private final List<ClientHandler> clients = new ArrayList<>();
+    private final Map<String, ClientHandler> clients = new HashMap<>();
 
     /**
      * Creates the server
@@ -45,20 +45,27 @@ public class Server {
      * Adds a ClientHandler to the list of clients and broadcasts a message to announce the new user
      *
      * @param clientHandler the ClientHandler to add to the list
+     * @throws UsernameAlreadyTakenException if the clients username is already present in the list
      */
-    public synchronized void subscribe(ClientHandler clientHandler) {
-        clients.add(clientHandler);
-        broadcastMessage("В чат зашел " + clientHandler.getUsername());
+    public synchronized void subscribe(ClientHandler clientHandler) throws UsernameAlreadyTakenException {
+        if (clients.containsKey(clientHandler.getUsername())) {
+            throw new UsernameAlreadyTakenException();
+        }
+        clients.put(clientHandler.getUsername(), clientHandler);
+        broadcastMessage(clientHandler.getUsername() + " have entered the chat");
     }
 
     /**
      * Removes a ClientHandler from the list of clients and broadcasts a message to announce the departure of the user
+     * Noop if the client's username is null, or if it is not on the clients list
      *
      * @param clientHandler the ClientHandler to remove
      */
     public synchronized void unsubscribe(ClientHandler clientHandler) {
-        clients.remove(clientHandler);
-        broadcastMessage("Из чата вышел " + clientHandler.getUsername());
+        if (clientHandler.getUsername() != null && clients.containsKey(clientHandler.getUsername())) {
+            broadcastMessage(clientHandler.getUsername() + " have left the chat");
+            clients.remove(clientHandler.getUsername());
+        }
     }
 
     /**
@@ -67,8 +74,34 @@ public class Server {
      * @param message the message to broadcast
      */
     public synchronized void broadcastMessage(String message) {
-        for (ClientHandler client : clients) {
+        for (ClientHandler client : clients.values()) {
             client.sendMessage(message);
         }
+    }
+
+    /**
+     * Sends a private message to a client with a specified username
+     *
+     * @param username the client's username
+     * @param message  the message to send
+     * @throws UsernameNotFoundException if the username not found in the clients lists
+     */
+    public synchronized void whisperMessage(String username, String message) throws UsernameNotFoundException {
+        if (!clients.containsKey(username)) {
+            throw new UsernameNotFoundException();
+        }
+        clients.get(username).sendMessage(message);
+    }
+
+
+    /**
+     * Checks if a ClientHandler is in the clients list
+     *
+     * @param clientHandler the ClientHandler to check
+     * @return true if found
+     */
+    public boolean isSubscribed(ClientHandler clientHandler) {
+        return clients.containsKey(clientHandler.getUsername())
+                && clients.get(clientHandler.getUsername()) == clientHandler;
     }
 }
