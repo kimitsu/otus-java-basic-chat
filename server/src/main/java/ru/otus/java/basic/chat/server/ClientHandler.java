@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class ClientHandler {
     private final Server server;
@@ -12,7 +14,6 @@ public class ClientHandler {
     private final DataOutputStream outputStream;
 
     private String username;
-    private static int usersCount = 0;
 
     /**
      * Creates a thread that will read and write to the socket of the established connection to a client
@@ -26,29 +27,73 @@ public class ClientHandler {
         this.socket = socket;
         this.inputStream = new DataInputStream(socket.getInputStream());
         this.outputStream = new DataOutputStream(socket.getOutputStream());
-        usersCount++;
-        this.username = "user" + usersCount;
+        startThread();
+    }
+
+    /**
+     * Starts the thread which receives messages from the inputStream and broadcasts them to the server
+     * Messages that start with "/" are not broadcast and cause special behavior:
+     * /join name - subscribes or resubscribes the client to the server under a specified username
+     * /w name message - sends the message to the specified username
+     * /exit - sends /bye to the client and closes the connection
+     */
+    private void startThread() {
         new Thread(() -> {
             try {
-                server.subscribe(this);
                 while (true) {
                     String message = inputStream.readUTF();
                     if (message.startsWith("/")) {
-                        if (message.equals("/exit")) {
-                            sendMessage("/bye");
-                            break;
-                        }
-                        continue;
+                        processCommand(message);
+                    } else if (server.isSubscribed(this)) {
+                        server.broadcastMessage("[" + username + "]: " + message);
                     }
-                    server.broadcastMessage(message);
                 }
             } catch (IOException e) {
                 System.out.println("Error while communicating with a client");
                 e.printStackTrace();
+            } catch (TerminateClientException e) {
             } finally {
                 disconnect();
             }
         }).start();
+    }
+
+    /**
+     * Processes a message containing a command
+     * @param message the message to process
+     * @throws TerminateClientException if the client connection is to be terminated
+     */
+    private void processCommand(String message) throws TerminateClientException {
+        String[] arguments = message.split(" ");
+        String command = arguments[0];
+        if (command.equals("/join") && arguments.length > 1) {
+            if (server.isSubscribed(this)) {
+                server.unsubscribe(this);
+            }
+            username = arguments[1];
+            try {
+                server.subscribe(this);
+            } catch (UsernameAlreadyTakenException e) {
+                username = null;
+                sendMessage("SERVER: Username is already taken");
+                sendMessage("/bye");
+                throw new TerminateClientException();
+            }
+        } else if (command.equals("/w") && arguments.length > 2) {
+            try {
+                String recipient = arguments[1];
+                String whisper = Arrays.stream(arguments).skip(2).collect(Collectors.joining(" "));
+                server.whisperMessage(recipient, "(whisper from " + username + "): " + whisper);
+                sendMessage("(whispered to " + recipient + "): " + whisper);
+            } catch (UsernameNotFoundException e) {
+                sendMessage("SERVER: User not found");
+            }
+        } else if (command.equals("/exit")) {
+            sendMessage("/bye");
+            throw new TerminateClientException();
+        } else {
+            sendMessage("SERVER: Unrecognized command or incorrect arguments");
+        }
     }
 
     /**

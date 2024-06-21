@@ -5,6 +5,13 @@ import java.io.IOException;
 public class ClientApplication {
     private static final String DEFAULT_HOST = "localhost";
     private static final int DEFAULT_PORT = 8189;
+
+    /**
+     * Start the chat client application
+     * Arguments: [host [port]]
+     *
+     * @param args passed arguments
+     */
     public static void main(String[] args) {
         try {
             String host = args.length > 0 ? args[0] : DEFAULT_HOST;
