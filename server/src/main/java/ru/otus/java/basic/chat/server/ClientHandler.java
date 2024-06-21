@@ -67,9 +67,7 @@ public class ClientHandler {
         String[] arguments = message.split(" ");
         String command = arguments[0];
         if (command.equals("/join") && arguments.length > 1) {
-            if (server.isSubscribed(this)) {
-                server.unsubscribe(this);
-            }
+            server.unsubscribe(this);
             username = arguments[1];
             try {
                 server.subscribe(this);

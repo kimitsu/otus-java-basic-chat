@@ -57,11 +57,12 @@ public class Server {
 
     /**
      * Removes a ClientHandler from the list of clients and broadcasts a message to announce the departure of the user
+     * Noop if the client's username is null, or if it is not on the clients list
      *
      * @param clientHandler the ClientHandler to remove
      */
     public synchronized void unsubscribe(ClientHandler clientHandler) {
-        if (clientHandler.getUsername() != null) {
+        if (clientHandler.getUsername() != null && clients.containsKey(clientHandler.getUsername())) {
             broadcastMessage(clientHandler.getUsername() + " have left the chat");
             clients.remove(clientHandler.getUsername());
         }
