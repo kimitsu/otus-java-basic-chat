@@ -112,4 +112,21 @@ public class Server {
     public AuthenticationProvider getAuthenticationProvider() {
         return authenticationProvider;
     }
+
+    /**
+     * Kick a username from server
+     *
+     * @param username a username to kick
+     */
+    public synchronized void kick(String username, String kicker) throws UsernameNotFoundException {
+        if (!clients.containsKey(username)) {
+            throw new UsernameNotFoundException();
+        }
+        ClientHandler client = clients.get(username);
+        unsubscribe(client);
+        client.sendMessage("SERVER: You have been kicked by " + kicker);
+        client.sendMessage("/bye");
+        client.disconnect();
+        broadcastMessage(kicker + " has kicked " + username + " from the chat");
+    }
 }
