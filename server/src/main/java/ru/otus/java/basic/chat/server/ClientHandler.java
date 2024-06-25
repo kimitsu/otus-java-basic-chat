@@ -14,6 +14,8 @@ public class ClientHandler {
     private final DataOutputStream outputStream;
 
     private String username;
+    private int id;
+    private static int idCounter = 0;
 
     /**
      * Creates a thread that will read and write to the socket of the established connection to a client
@@ -27,24 +29,32 @@ public class ClientHandler {
         this.socket = socket;
         this.inputStream = new DataInputStream(socket.getInputStream());
         this.outputStream = new DataOutputStream(socket.getOutputStream());
+        this.id = idCounter++;
         startThread();
     }
 
     /**
      * Starts the thread which receives messages from the inputStream and broadcasts them to the server
      * Messages that start with "/" are not broadcast and cause special behavior:
-     * /join name - subscribes or resubscribes the client to the server under a specified username
-     * /w name message - sends the message to the specified username
-     * /exit - sends /bye to the client and closes the connection
+     * /auth login password - tries to log in to the server using a login and a password combination.
+     * /reg username login password - tries to register a specific username for a login and a password combination.
+     * /w name message - sends the message to the specified username.
+     * /exit - sends /bye to the client and closes the connection.
      */
     private void startThread() {
+        System.out.println("Client connection established (id:" + id + ").");
         new Thread(() -> {
             try {
                 while (true) {
                     String message = inputStream.readUTF();
+                    System.out.println("RECV(id:" + id + "): " + message);
                     if (message.startsWith("/")) {
                         processCommand(message);
-                    } else if (server.isSubscribed(this)) {
+                    } else {
+                        if (!isLoggedIn()) {
+                            sendMessage("SERVER: You are not authenticated. Use /auth <login> <password> or /reg <username> <login> <password>");
+                            continue;
+                        }
                         server.broadcastMessage("[" + username + "]: " + message);
                     }
                 }
@@ -66,32 +76,63 @@ public class ClientHandler {
     private void processCommand(String message) throws TerminateClientException {
         String[] arguments = message.split(" ");
         String command = arguments[0];
-        if (command.equals("/join") && arguments.length > 1) {
-            server.unsubscribe(this);
-            username = arguments[1];
-            try {
-                server.subscribe(this);
-            } catch (UsernameAlreadyTakenException e) {
-                username = null;
-                sendMessage("SERVER: Username is already taken");
-                sendMessage("/bye");
-                throw new TerminateClientException();
+        if (command.equals("/auth")) {
+            if (arguments.length != 3) {
+                sendMessage("SERVER: Incorrect arguments. Use /auth <login> <password>");
+                return;
             }
-        } else if (command.equals("/w") && arguments.length > 2) {
+            server.getAuthenticationProvider().authenticate(this, arguments[1], arguments[2]);
+            return;
+        }
+        if (command.equals("/reg")) {
+            if (arguments.length != 4) {
+                sendMessage("SERVER: Incorrect arguments. Use /reg <username> <login> <password>");
+            }
+            server.getAuthenticationProvider().register(this, arguments[2], arguments[3], arguments[1]);
+            return;
+        }
+        if (!isLoggedIn()) {
+            sendMessage("SERVER: You are not authenticated. Use /auth <login> <password> or /reg <username> <login> <password>");
+            return;
+        }
+        if (command.equals("/w")) {
+            if (arguments.length < 3) {
+                sendMessage("SERVER: Incorrect arguments. Use /w <username> <message>...");
+            }
             try {
                 String recipient = arguments[1];
                 String whisper = Arrays.stream(arguments).skip(2).collect(Collectors.joining(" "));
-                server.whisperMessage(recipient, "(whisper from " + username + "): " + whisper);
                 sendMessage("(whispered to " + recipient + "): " + whisper);
+                server.whisperMessage(recipient, "(whisper from " + username + "): " + whisper);
             } catch (UsernameNotFoundException e) {
                 sendMessage("SERVER: User not found");
             }
-        } else if (command.equals("/exit")) {
+            return;
+        }
+        if (command.equals("/exit")) {
             sendMessage("/bye");
             throw new TerminateClientException();
-        } else {
-            sendMessage("SERVER: Unrecognized command or incorrect arguments");
         }
+        sendMessage("SERVER: Unrecognized command");
+    }
+
+    /**
+     * Logs in under a specific username. Sends an error message if the username is already taken.
+     *
+     * @param username the username to log in
+     * @return true if login successful, false if the username is already taken
+     */
+    public synchronized boolean login(String username) {
+        server.unsubscribe(this);
+        this.username = username;
+        try {
+            server.subscribe(this);
+        } catch (UsernameAlreadyTakenException e) {
+            this.username = null;
+            sendMessage("SERVER: User has already logged in");
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -101,6 +142,7 @@ public class ClientHandler {
      */
     public void sendMessage(String message) {
         try {
+            System.out.println("SEND(id:" + id + "): " + message);
             outputStream.writeUTF(message);
         } catch (IOException e) {
             System.out.println("Failed to send the message");
@@ -134,9 +176,16 @@ public class ClientHandler {
     }
 
     /**
-     * @return client's username
+     * @return the client's username
      */
     public String getUsername() {
         return username;
+    }
+
+    /**
+     * @return true if the client is logged in under some username, false if the client is not logged in
+     */
+    private boolean isLoggedIn() {
+        return username != null;
     }
 }

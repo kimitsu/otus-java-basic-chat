@@ -10,7 +10,6 @@ public class Client {
     private final Socket socket;
     private final DataInputStream inputStream;
     private final DataOutputStream outputStream;
-    private final String username;
 
     /**
      * Creates a client which connects to a server and starts sending and receiving messages
@@ -27,10 +26,6 @@ public class Client {
         inputStream = new DataInputStream(socket.getInputStream());
         outputStream = new DataOutputStream(socket.getOutputStream());
         System.out.println("Connection established");
-        System.out.print("Enter your name: ");
-        username = scanner.nextLine();
-        System.out.println("Entering the chat as " + username);
-        sendMessage("/join " + username);
         Thread thread = startThread();
         while (true) {
             String message = scanner.nextLine();
@@ -65,7 +60,6 @@ public class Client {
                     String message = inputStream.readUTF();
                     if (message.equals("/bye")) {
                         System.out.println("Server has terminated the connection");
-                        disconnect();
                         break;
                     }
                     System.out.println(message);

@@ -9,6 +9,7 @@ import java.util.Map;
 public class Server {
     private final int port;
     private final Map<String, ClientHandler> clients = new HashMap<>();
+    private final AuthenticationProvider authenticationProvider;
 
     /**
      * Creates the server
@@ -17,6 +18,7 @@ public class Server {
      */
     public Server(int port) {
         this.port = port;
+        this.authenticationProvider = new InMemoryAuthenticationProvider();
     }
 
     /**
@@ -93,7 +95,6 @@ public class Server {
         clients.get(username).sendMessage(message);
     }
 
-
     /**
      * Checks if a ClientHandler is in the clients list
      *
@@ -103,5 +104,12 @@ public class Server {
     public boolean isSubscribed(ClientHandler clientHandler) {
         return clients.containsKey(clientHandler.getUsername())
                 && clients.get(clientHandler.getUsername()) == clientHandler;
+    }
+
+    /**
+     * @return the current authentication provider
+     */
+    public AuthenticationProvider getAuthenticationProvider() {
+        return authenticationProvider;
     }
 }
