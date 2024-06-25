@@ -10,7 +10,6 @@ public class Client {
     private final Socket socket;
     private final DataInputStream inputStream;
     private final DataOutputStream outputStream;
-    //private final String username;
 
     /**
      * Creates a client which connects to a server and starts sending and receiving messages
