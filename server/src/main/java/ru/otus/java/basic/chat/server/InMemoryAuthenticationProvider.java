@@ -84,7 +84,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
      * @param clientHandler the ClientHandler to authenticate
      * @param login         the login
      * @param password      the password
-     * @return true if authentication successful, true if the login or the password are incorrect,
+     * @return true if authentication successful, false if the login or the password are incorrect,
      * or if the user has already logged in
      */
     @Override
