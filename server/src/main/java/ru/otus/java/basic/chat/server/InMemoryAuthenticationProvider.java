@@ -8,11 +8,13 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
         private String login;
         private String password;
         private String username;
+        private UserRole role;
 
-        public User(String login, String password, String username) {
+        public User(String login, String password, String username, UserRole role) {
             this.login = login;
             this.password = password;
             this.username = username;
+            this.role = role;
         }
     }
 
@@ -23,23 +25,23 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
      */
     public InMemoryAuthenticationProvider() {
         this.users = new ArrayList<>();
-        this.users.add(new User("user1", "pass1", "Ivanov"));
-        this.users.add(new User("user2", "pass2", "Pertov"));
-        this.users.add(new User("user3", "pass3", "Sidoroff"));
+        this.users.add(new User("user1", "pass1", "Ivanov", UserRole.ADMIN));
+        this.users.add(new User("user2", "pass2", "Pertov", UserRole.USER));
+        this.users.add(new User("user3", "pass3", "Sidoroff", UserRole.USER));
         System.out.println("In-memory authentication service initialized.");
     }
 
     /**
-     * Finds a username for a specific login and password combination
+     * Finds a User for a specific login and password combination
      *
      * @param login    a login
      * @param password a passoword
-     * @return a username if the login and password combination is found, null if no matches found
+     * @return a User if the login and password combination is found, null if no matches found
      */
-    private synchronized String getUsernameByLoginAndPassword(String login, String password) {
+    private synchronized User getUserByLoginAndPassword(String login, String password) {
         for (User user : users) {
             if (user.login.equals(login) && user.password.equals(password)) {
-                return user.username;
+                return user;
             }
         }
         return null;
@@ -87,13 +89,16 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
      */
     @Override
     public synchronized boolean authenticate(ClientHandler clientHandler, String login, String password) {
-        String username = getUsernameByLoginAndPassword(login, password);
-        if (username == null) {
+        User user = getUserByLoginAndPassword(login, password);
+        if (user == null) {
             clientHandler.sendMessage("AUTH: Incorrect login/password");
             return false;
         }
         clientHandler.sendMessage("AUTH: Authentication successful");
-        return clientHandler.login(username);
+        if (!clientHandler.login(new UserProfile(user.username, user.role))) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -104,7 +109,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
      * @param login         the login
      * @param password      the password
      * @param username      the username
-     * @return true if authentication successful, false if the username, the login or the password are of incorrect format,
+     * @return true if registration successful, false if the username, the login or the password are of incorrect format,
      * or if the username is already taken, or if the user has already logged in (which is an error)
      */
     @Override
@@ -119,10 +124,14 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
         }
         if (isUsernameExists(username)) {
             clientHandler.sendMessage("AUTH: Username is already taken");
+            return false;
         }
-        users.add(new User(login, password, username));
+        users.add(new User(login, password, username, UserRole.USER));
         clientHandler.sendMessage("AUTH: Registration successful");
-        return clientHandler.login(username);
+        if (!clientHandler.login(new UserProfile(username, UserRole.USER))) {
+            return false;
+        }
+        return true;
     }
 
 }

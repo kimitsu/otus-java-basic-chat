@@ -54,7 +54,7 @@ public class Server {
             throw new UsernameAlreadyTakenException();
         }
         clients.put(clientHandler.getUsername(), clientHandler);
-        broadcastMessage(clientHandler.getUsername() + " have entered the chat");
+        broadcastMessage(clientHandler.getUsername() + " has entered the chat");
     }
 
     /**
@@ -65,7 +65,7 @@ public class Server {
      */
     public synchronized void unsubscribe(ClientHandler clientHandler) {
         if (clientHandler.getUsername() != null && clients.containsKey(clientHandler.getUsername())) {
-            broadcastMessage(clientHandler.getUsername() + " have left the chat");
+            broadcastMessage(clientHandler.getUsername() + " has left the chat");
             clients.remove(clientHandler.getUsername());
         }
     }
@@ -86,7 +86,7 @@ public class Server {
      *
      * @param username the client's username
      * @param message  the message to send
-     * @throws UsernameNotFoundException if the username not found in the clients lists
+     * @throws UsernameNotFoundException if the username not found in the clients list
      */
     public synchronized void whisperMessage(String username, String message) throws UsernameNotFoundException {
         if (!clients.containsKey(username)) {
@@ -96,20 +96,26 @@ public class Server {
     }
 
     /**
-     * Checks if a ClientHandler is in the clients list
-     *
-     * @param clientHandler the ClientHandler to check
-     * @return true if found
-     */
-    public boolean isSubscribed(ClientHandler clientHandler) {
-        return clients.containsKey(clientHandler.getUsername())
-                && clients.get(clientHandler.getUsername()) == clientHandler;
-    }
-
-    /**
      * @return the current authentication provider
      */
     public AuthenticationProvider getAuthenticationProvider() {
         return authenticationProvider;
+    }
+
+    /**
+     * Kicks a username from server
+     *
+     * @param username a username to kick
+     * @throws UsernameNotFoundException if the username not found in the clients list
+     */
+    public synchronized void kick(String username, String kicker) throws UsernameNotFoundException {
+        if (!clients.containsKey(username)) {
+            throw new UsernameNotFoundException();
+        }
+        ClientHandler client = clients.get(username);
+        client.sendMessage("SERVER: You have been kicked by " + kicker);
+        client.sendMessage("/bye");
+        client.disconnect();
+        broadcastMessage(kicker + " has kicked " + username + " from the chat");
     }
 }

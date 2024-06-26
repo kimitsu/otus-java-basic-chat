@@ -21,7 +21,7 @@ public interface AuthenticationProvider {
      * @param login         the login
      * @param password      the password
      * @param username      the username
-     * @return true if authentication successful, false if the username, the login or the password are of incorrect format,
+     * @return true if registration successful, false if the username, the login or the password are of incorrect format,
      * or if the username is already taken, or if the user has already logged in (which is an error)
      */
     boolean register(ClientHandler clientHandler, String login, String password, String username);
