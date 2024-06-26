@@ -124,6 +124,7 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
         }
         if (isUsernameExists(username)) {
             clientHandler.sendMessage("AUTH: Username is already taken");
+            return false;
         }
         users.add(new User(login, password, username, UserRole.USER));
         clientHandler.sendMessage("AUTH: Registration successful");

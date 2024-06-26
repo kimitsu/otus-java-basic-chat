@@ -14,7 +14,7 @@ public class ClientHandler {
     private final DataOutputStream outputStream;
 
     private UserProfile profile;
-    private int id;
+    private final int id;
     private static int idCounter = 0;
 
     /**
@@ -87,6 +87,7 @@ public class ClientHandler {
         if (command.equals("/reg")) {
             if (arguments.length != 4) {
                 sendMessage("SERVER: Incorrect arguments. Use /reg <username> <login> <password>");
+                return;
             }
             server.getAuthenticationProvider().register(this, arguments[2], arguments[3], arguments[1]);
             return;
@@ -102,6 +103,7 @@ public class ClientHandler {
         if (command.equals("/w")) {
             if (arguments.length < 3) {
                 sendMessage("SERVER: Incorrect arguments. Use /w <username> <message>...");
+                return;
             }
             try {
                 String recipient = arguments[1];
@@ -167,7 +169,7 @@ public class ClientHandler {
     }
 
     /**
-     * Close the streams and the socket
+     * Unsubscribes, closes the streams and the socket
      */
     public void disconnect() {
         System.out.println("Closing client connection id:" + id);
@@ -193,7 +195,7 @@ public class ClientHandler {
     }
 
     /**
-     * @return the client's username
+     * @return the client's username, null if the client is not logged in
      */
     public String getUsername() {
         return profile == null ? null : profile.getUsername();

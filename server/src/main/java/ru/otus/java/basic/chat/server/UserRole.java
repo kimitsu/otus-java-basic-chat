@@ -1,17 +1,18 @@
 package ru.otus.java.basic.chat.server;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public enum UserRole {
-    ADMIN(), USER(Arrays.asList("/kick"));
-    private final List<String> forbiddenCommands;
+    ADMIN(), USER(new HashSet<>(Arrays.asList("/kick")));
+    private final Set<String> forbiddenCommands;
 
     UserRole() {
         this.forbiddenCommands = null;
     }
 
-    UserRole(List<String> forbiddenCommands) {
+    UserRole(Set<String> forbiddenCommands) {
         this.forbiddenCommands = forbiddenCommands;
     }
 
@@ -22,6 +23,6 @@ public enum UserRole {
      * @return true if command is allowed, false otherwise
      */
     public boolean isCommandAllowed(String command) {
-        return forbiddenCommands == null || forbiddenCommands.stream().noneMatch(aCommand -> aCommand.equals(command));
+        return forbiddenCommands == null || !forbiddenCommands.contains(command);
     }
 }
