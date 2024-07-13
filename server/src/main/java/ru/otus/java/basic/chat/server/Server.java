@@ -18,7 +18,7 @@ public class Server {
      */
     public Server(int port) {
         this.port = port;
-        this.authenticationProvider = new InMemoryAuthenticationProvider();
+        this.authenticationProvider = new JDBCAuthenticationProvider();
     }
 
     /**
@@ -117,5 +117,14 @@ public class Server {
         client.sendMessage("/bye");
         client.disconnect();
         broadcastMessage(kicker + " has kicked " + username + " from the chat");
+    }
+
+    public void stop() {
+        System.out.println("Stopping the server...");
+        try {
+            authenticationProvider.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

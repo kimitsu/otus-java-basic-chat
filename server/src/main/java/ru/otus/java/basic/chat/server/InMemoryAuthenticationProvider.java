@@ -134,4 +134,12 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider {
         return true;
     }
 
+    /**
+     * Does nothing
+     *
+     * @throws Exception never
+     */
+    @Override
+    public void close() throws Exception {
+    }
 }
