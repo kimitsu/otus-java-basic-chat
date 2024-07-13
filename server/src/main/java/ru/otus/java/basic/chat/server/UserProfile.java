@@ -8,7 +8,7 @@ public class UserProfile {
      * Creates a user profile
      *
      * @param username a username
-   у  * @param role     a role
+     * @param role     a role
      */
     public UserProfile(String username, UserRole role) {
         this.username = username;
