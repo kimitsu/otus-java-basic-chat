@@ -221,7 +221,7 @@ public class JDBCAuthenticationProvider implements AuthenticationProvider {
      * or if the username is already taken, or if the user has already logged in (which is an error)
      */
     @Override
-    public boolean register(ClientHandler clientHandler, String login, String password, String username) {
+    public synchronized boolean register(ClientHandler clientHandler, String login, String password, String username) {
         try {
             if (login.length() < 3 || password.length() < 6 || username.length() < 3) {
                 clientHandler.sendMessage("AUTH: Login must be 3+ symbols, password 6+ symbols, username 3+ symbols");
