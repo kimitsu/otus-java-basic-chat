@@ -1,6 +1,6 @@
 package ru.otus.java.basic.chat.server;
 
-public interface AuthenticationProvider {
+public interface AuthenticationProvider extends AutoCloseable {
     /**
      * Authenticates and logs in a ClientHandler by a login and a password combination.
      * Calls ClientHandler.login on a success, otherwise sends error messages to the client.

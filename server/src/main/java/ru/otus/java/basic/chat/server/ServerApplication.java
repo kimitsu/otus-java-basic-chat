@@ -10,11 +10,17 @@ public class ServerApplication {
      * @param args passed arguments
      */
     public static void main(String[] args) {
+        Server server = null;
         try {
             int port = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
-            new Server(port).start();
+            server = new Server(port);
+            server.start();
         } catch (NumberFormatException e) {
             System.out.println("Invalid port number");
+        } finally {
+            if (server != null) {
+                server.stop();
+            }
         }
     }
 }
